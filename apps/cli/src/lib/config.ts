@@ -5,7 +5,7 @@ import { PAWD_ENV_FILE } from './paths.js';
 /**
  * Read a named env var from process.env or from ~/.pawd/.env.
  */
-function readEnvVar(name: string): string {
+export function readEnvVar(name: string): string {
   if (process.env[name]) return process.env[name]!;
 
   if (!existsSync(PAWD_ENV_FILE)) return '';

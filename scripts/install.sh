@@ -32,8 +32,9 @@ ENV_FILE="${CONFIG_DIR}/.env"
 DEFAULT_PORT=3001
 NODE_MIN_VERSION=20
 
-SUPABASE_URL="https://nnhzfiifzcocvcpkweol.supabase.co/functions/v1/provision-subdomain"
-SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5uaHpmaWlmemNvY3ZjcGt3ZW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3Nzk1NDksImV4cCI6MjA4NzM1NTU0OX0.Z_9r4FUKGNIx0kS5p1o8_O4K9FVb4dNPEo9RfkB8KaA"
+# Supabase credentials — read from env or ~/.pawd/.env
+SUPABASE_URL="${SUPABASE_URL:-}"
+SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}"
 
 # ── Input defaults ─────────────────────────────────────────────────────────────
 
@@ -572,6 +573,18 @@ provision_subdomain() {
 
   if [[ "${SKIP_SUBDOMAIN}" == "true" ]]; then
     info "Skipping subdomain provisioning (--skip-subdomain)"
+    return 0
+  fi
+
+  # Load Supabase credentials from ~/.pawd/.env if not already set
+  if [[ -z "$SUPABASE_URL" || -z "$SUPABASE_ANON_KEY" ]] && [[ -f "${ENV_FILE}" ]]; then
+    [[ -z "$SUPABASE_URL" ]] && SUPABASE_URL="$(grep -E '^SUPABASE_URL=' "${ENV_FILE}" | head -1 | sed 's/^SUPABASE_URL=//' | sed 's/^["'\'']//' | sed 's/["'\'']$//')"
+    [[ -z "$SUPABASE_ANON_KEY" ]] && SUPABASE_ANON_KEY="$(grep -E '^SUPABASE_ANON_KEY=' "${ENV_FILE}" | head -1 | sed 's/^SUPABASE_ANON_KEY=//' | sed 's/^["'\'']//' | sed 's/["'\'']$//')"
+  fi
+
+  if [[ -z "$SUPABASE_URL" || -z "$SUPABASE_ANON_KEY" ]]; then
+    warn "SUPABASE_URL or SUPABASE_ANON_KEY not set — skipping subdomain provisioning"
+    info "Set them in ~/.pawd/.env or as environment variables to enable subdomain provisioning"
     return 0
   fi
 

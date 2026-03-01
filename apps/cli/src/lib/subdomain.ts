@@ -2,10 +2,19 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync } from 'f
 import { dirname } from 'path';
 import { generateKeyPairSync, createHash, createPublicKey } from 'crypto';
 import { SUBDOMAIN_FILE, IDENTITY_FILE } from './paths.js';
+import { readEnvVar } from './config.js';
 
-const SUPABASE_URL = 'https://nnhzfiifzcocvcpkweol.supabase.co';
-const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5uaHpmaWlmemNvY3ZjcGt3ZW9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3Nzk1NDksImV4cCI6MjA4NzM1NTU0OX0.Z_9r4FUKGNIx0kS5p1o8_O4K9FVb4dNPEo9RfkB8KaA';
+function getSupabaseUrl(): string {
+  const url = readEnvVar('SUPABASE_URL');
+  if (!url) throw new Error('SUPABASE_URL is not set. Add it to ~/.pawd/.env or set it as an environment variable.');
+  return url;
+}
+
+function getSupabaseAnonKey(): string {
+  const key = readEnvVar('SUPABASE_ANON_KEY');
+  if (!key) throw new Error('SUPABASE_ANON_KEY is not set. Add it to ~/.pawd/.env or set it as an environment variable.');
+  return key;
+}
 
 /** The fixed SPKI prefix for Ed25519 public keys (12 bytes). */
 const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
@@ -104,12 +113,15 @@ export async function provisionSubdomain(
   deviceId: string,
   ip: string
 ): Promise<SubdomainInfo> {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseAnonKey = getSupabaseAnonKey();
+
   const res = await fetch(
-    `${SUPABASE_URL}/functions/v1/provision-subdomain`,
+    `${supabaseUrl}/functions/v1/provision-subdomain`,
     {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        Authorization: `Bearer ${supabaseAnonKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ deviceId, ip }),
